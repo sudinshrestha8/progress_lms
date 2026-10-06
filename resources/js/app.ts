@@ -15,6 +15,10 @@ void createInertiaApp({
                 return null;
             case name === 'Dashboard':
                 return null;
+            case name === 'admin/RolesPermissions':
+                return null;
+            case name === 'student/Dashboard':
+                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('settings/'):

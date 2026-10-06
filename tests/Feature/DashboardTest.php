@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Inertia\Testing\AssertableInertia as Assert;
 
 test('guests are redirected to the login page', function () {
     $response = $this->get(route('dashboard'));
@@ -12,5 +13,14 @@ test('authenticated users can visit the dashboard', function () {
     $this->actingAs($user);
 
     $response = $this->get(route('dashboard'));
-    $response->assertOk();
+    $response
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Dashboard')
+            ->where('dashboard.user.name', $user->name)
+            ->has('dashboard.metrics', 6)
+            ->has('dashboard.activityTrend', 14)
+            ->has('dashboard.attentionGroups', 3)
+            ->has('dashboard.systemHealth', 4)
+        );
 });

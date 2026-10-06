@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -11,8 +12,12 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request): Response|RedirectResponse
     {
+        if ($request->user()->hasRole('student')) {
+            return redirect()->route('student.dashboard');
+        }
+
         $activeStudents = DB::table('students')->where('status', 'ACTIVE')->count();
         $activeTeachers = DB::table('teachers')->where('status', 'ACTIVE')->count();
         $activeClasses = DB::table('classes')->where('status', 'ACTIVE')->count();
@@ -78,8 +83,9 @@ class DashboardController extends Controller
                     ),
                 ],
                 'user' => [
-                    'name' => $user?->name ?? 'Administrator',
+                    'name' => $user->name,
                     'role' => 'Provost / LMS Admin',
+                    'canManageRoles' => $user->hasRole('super_admin'),
                 ],
                 'terms' => $terms,
                 'colleges' => [['id' => 'all', 'label' => 'All Colleges (Main Campus)']],
@@ -133,7 +139,7 @@ class DashboardController extends Controller
     /** @return list<array{label: string, value: int}> */
     private function activityTrend(): array
     {
-        return collect(range(13, 0))
+        return array_values(collect(range(13, 0))
             ->map(function (int $daysAgo): array {
                 $date = today()->subDays($daysAgo);
 
@@ -142,7 +148,8 @@ class DashboardController extends Controller
                     'value' => DB::table('submissions')->whereDate('submitted_at', $date)->count(),
                 ];
             })
-            ->all();
+            ->values()
+            ->all());
     }
 
     /** @return list<array<string, mixed>> */
@@ -158,7 +165,7 @@ class DashboardController extends Controller
     /** @return list<array<string, string>> */
     private function recentActivity(): array
     {
-        return DB::table('users')
+        return array_values(DB::table('users')
             ->latest('created_at')
             ->limit(6)
             ->get(['full_name', 'created_at'])
@@ -169,6 +176,7 @@ class DashboardController extends Controller
                 'time' => Carbon::parse($user->created_at)->diffForHumans(),
                 'category' => 'Identity',
             ])
-            ->all();
+            ->values()
+            ->all());
     }
 }
